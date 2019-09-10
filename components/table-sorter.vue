@@ -1,5 +1,5 @@
 <template lang="pug">
-  .table-sorter
+  .table-sorter(@keydown.esc="popup = false")
     .pagination
       span Страница {{page}} из {{Math.ceil(rows_filtered.length / onpage_prop)}} (Всего {{rows_filtered.length}} элементов)
       .btn(:class="{ disabled: (page == 1) }", @click="page = 1") &#9668;&#9668;	
@@ -12,15 +12,16 @@
           template(v-for="p in onpageSelect")
             option(:value="p") {{p}}
     .filter
-      input(v-model="filter", placeholder="Введите текст для поиска")
+      input(type="text", v-model="filter", placeholder="Введите текст для поиска")
       .btn.clear(v-if="filter !== ''", @click="filter = ''")
+      .btn.options(@click="popup = true")
     .table
       .cols
         template(v-for="(col, idx) in cols")
           .col(v-if="col.visible")
             .title {{col.title}}
             .filter
-              input(v-model="cols[idx].filter")
+              input(type="text", v-model="cols[idx].filter")
               .btn.clear(v-if="cols[idx].filter !== ''", @click="cols[idx].filter = ''")
             .rows
               template(v-for="(row, ridx) in getRows(col)")
@@ -36,6 +37,17 @@
         select(v-model="onpage_prop")
           template(v-for="p in onpageSelect")
             option(:value="p") {{p}}
+    .popup(:class="{ active: popup }")
+      .overlay(@click="popup = false")
+      .window
+        .close(@click="popup = false") &times;
+        .content
+          | Видимость столбцов:
+          .items
+            template(v-for="(col, idx) in cols")
+              label.item
+                input(type="checkbox", v-model="cols[idx].visible")
+                .title {{col.title}}
 </template>
 <script>
 export default {
@@ -51,7 +63,9 @@ export default {
     },
     onpageSelect: {
       type: Array,
-      default: [10, 20, 50, 100]
+      default: function() {
+        return [10, 20, 50, 100];
+      }
     }
   },
 
@@ -61,7 +75,9 @@ export default {
       rows: [],
       filter: '',
       page: 1,
-      onpage_prop: this.onpage
+      onpage_prop: this.onpage,
+
+      popup: false
     }
   },
 
@@ -73,6 +89,7 @@ export default {
       if (this.filter !== "") {
         this.rows.forEach( (row) => {
           this.cols.every( (col) => {
+            if (!col.visible) return false;
             if ((row[col.title]+"").toLowerCase().indexOf(this.filter.toLowerCase()) > -1) {
               rows.push(row);
               return false;
@@ -192,20 +209,35 @@ export default {
     text-decoration: underline;
   }
 
-  .clear {
-    &::after {
-      content: '';
-      display: block;
-      background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTE5LDYuNDFMMTcuNTksNUwxMiwxMC41OUw2LjQxLDVMNSw2LjQxTDEwLjU5LDEyTDUsMTcuNTlMNi40MSwxOUwxMiwxMy40MUwxNy41OSwxOUwxOSwxNy41OUwxMy40MSwxMkwxOSw2LjQxWiIgLz48L3N2Zz4=);
-      background-position: center;
-      background-repeat: no-repeat;
-      background-size: contain;
-      width: 60%;
-      height: 60%;
+  .btn {
+    &.clear {
+      &::after {
+        content: '';
+        display: block;
+        background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTE5LDYuNDFMMTcuNTksNUwxMiwxMC41OUw2LjQxLDVMNSw2LjQxTDEwLjU5LDEyTDUsMTcuNTlMNi40MSwxOUwxMiwxMy40MUwxNy41OSwxOUwxOSwxNy41OUwxMy40MSwxMkwxOSw2LjQxWiIgLz48L3N2Zz4=);
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: contain;
+        width: 60%;
+        height: 60%;
+      }
+    }
+
+    &.options {
+      &::after {
+        content: '';
+        display: block;
+        background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTMsNUg5VjExSDNWNU01LDdWOUg3VjdINU0xMSw3SDIxVjlIMTFWN00xMSwxNUgyMVYxN0gxMVYxNU01LDIwTDEuNSwxNi41TDIuOTEsMTUuMDlMNSwxNy4xN0w5LjU5LDEyLjU5TDExLDE0TDUsMjBaIiAvPjwvc3ZnPg==);
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: contain;
+        width: 60%;
+        height: 60%;
+      }
     }
   }
 
-  input {
+  input[type="text"] {
     height: 25px;
     border-radius: 12.5px;
     -webkit-appearance: none;
@@ -215,6 +247,78 @@ export default {
 
   .btn {
     cursor: pointer;
+  }
+
+  .popup {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 300ms ease;
+
+    &.active {
+      opacity: 1;
+      pointer-events: initial;
+
+      .window {
+        top: 5%;
+      }
+    }
+
+    .overlay {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      opacity: .7;
+      cursor: pointer;
+    }
+
+    .window {
+      position: absolute;
+      left: 50%;
+      top: -5%;
+      transform: translateX(-50%);
+      border: 1px solid $gray;
+      background: #fff;
+      box-shadow: 0 3px 5px rgba(#000, .3);
+      padding: 20px 10px;
+      transition: all 300ms ease;
+
+      .close {
+        position: absolute;
+        right: 5px;
+        top: 5px;
+        font-size: 1.3em;
+        cursor: pointer;
+        display: flex;
+        width: 15px;
+        height: 15px;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .content {
+        .items {
+          padding: 5px 0;
+          .item {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+
+            input {
+              margin-right: 10px;
+            }
+          }
+        }
+      }
+    }
   }
 
   .pagination {
@@ -267,6 +371,10 @@ export default {
       justify-content: center;
       align-items: center;
       margin-left: 10px;
+
+      &.options {
+        margin-left: auto;
+      }
     }
   }
 
