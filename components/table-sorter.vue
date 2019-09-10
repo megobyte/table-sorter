@@ -50,11 +50,11 @@
                 .title {{col.title}}
 </template>
 <script>
-String.prototype.splice = function(idx, rem, str) {
+String.prototype.splice = function(idx, rem, str) { // резалка текста, чтобы добавлять теги, если есть фильтр
   return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem));
 };
 
-if (!window.localStorage) {
+if (!window.localStorage) { // если нет localStorage, эмулируем с помощью куков (https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Local_storage)
   window.localStorage = {
     getItem: function (sKey) {
       if (!sKey || !this.hasOwnProperty(sKey)) { return null; }
@@ -84,15 +84,15 @@ if (!window.localStorage) {
 export default {
   name: 'table-sorter',
   props: {
-    table: {
+    table: { // таблица с данными. Либо объект с содержимым cols: Array of strings и data: Array of strings, либо массив с объектами col: value
       type: [Object, Array],
       required: true
     },
-    onpage: {
+    onpage: { // сколько записей показывать на странице
       type: Number,
       default: 10
     },
-    onpageSelect: {
+    onpageSelect: { // массив значений выпадающего меню выбора количества записей на странице
       type: Array,
       default: function() {
         return [10, 20, 50, 100];
@@ -102,14 +102,14 @@ export default {
 
   data() {
     return {
-      cols: [],
-      rows: [],
-      filter: '',
-      page: 1,
-      onpage_prop: this.onpage,
-      key: '',
+      cols: [], // колонки
+      rows: [], // данные
+      filter: '', // глобальный фильтр
+      page: 1, // страница, которая отображается
+      onpage_prop: this.onpage, // сколько записей показывать
+      key: '', // ключ для считывания натроек из localStorage
+      popup: false, // отображение окна видимости столбцов
 
-      popup: false,
       dragging: false,
       col: '',
       xpos: 0
@@ -117,7 +117,7 @@ export default {
   },
 
   computed: {
-    rows_filtered: function() {
+    rows_filtered: function() { // отдает отфильтрованные данные, чтобы можно было посчитать кол-во элементов и страниц
       var rows = [];
 
       // global filter
@@ -156,56 +156,56 @@ export default {
   },
 
   watch: {
-    table: function() {
+    table: function() { // если данные обновились вне компонента, перезагружаем
       this.load();
     }
   },
 
   methods: {
-    startDrag(e, col) {
-      e.preventDefault();
+    startDrag(e, col) { // начало сортировки столбцов
+      e.preventDefault(); // чтобы не выделялся текст при драге
       col.dragging = true;
       this.dragging = true;
       this.xpos = e.clientX;
       this.col = col.title;
     },
 
-    doDrag(e) {
-      if (this.dragging) {
-        e.preventDefault();
+    doDrag(e) { // сортировка столбцов
+      if (this.dragging) { // если сейчас тащится какой-то столбец, то работаем
+        e.preventDefault(); // чтобы не выделялся текст при драге
         var xpos = e.clientX;
         var gap = this.$refs[this.col][0].getBoundingClientRect().width / 2;
-        if (xpos < this.xpos) { // moving left
+        if (xpos < this.xpos) { // мышка двигается влево
           var diff = this.xpos - xpos;
-          if (diff > gap) {
+          if (diff > gap) { // если мышка сдвинулась более чем на половину ширины столбца, переносим его влево
             this.colSort(-1);
           }
-        } else { // moving right
+        } else { // мышка двигается вправо
           var diff = xpos - this.xpos;
-          if (diff > gap) {
+          if (diff > gap) { // если мышка сдвинулась более чем на половину ширины столбца, переносим его вправо
             this.colSort(1);
           }
         }
       }
     },
 
-    stopDrag() {
+    stopDrag() { // кнопка мыши отпущена
       this.cols.forEach( (col) => {
         col.dragging = false;
       });
       this.dragging = false;
     },
 
-    colSort(direction) {
+    colSort(direction) { // сортируем столбцы
       this.dragging = false;
-      setTimeout(function(that) { that.dragging = true; }, 100, this);
+      setTimeout(function(that) { that.dragging = true; }, 100, this);  // чтобы столбец успел переехать на свое место
 
       var visible = 0;
-      this.cols.forEach( (col) => { if (col.visible) visible+=1; });
+      this.cols.forEach( (col) => { if (col.visible) visible+=1; });  // считаем, сколько видимых столбцов
 
       this.cols.forEach( (col, idx) => {
         if (col.title === this.col) {
-          if (direction < 0) {
+          if (direction < 0) { // вдигаем стобец влево
             if (col.order > 0) {
               var neibor = 1;
               while(this.cols[idx - neibor].visible === false) { neibor -= 1;}
@@ -221,7 +221,7 @@ export default {
               col.order -= neibor;
               this.xpos -= width;
             }
-          } else {
+          } else { // двигаем столбец вправо
             if (col.order < (visible - 1)) {
               var neibor = 1;
               while(this.cols[idx + neibor].visible === false) { neibor += 1;}
@@ -241,7 +241,7 @@ export default {
         }
       });
 
-      this.cols.sort( (a, b) => {
+      this.cols.sort( (a, b) => { // сортируем столбцы по новым значениям
         if ( a.order < b.order ){
           return -1;
         }
@@ -251,10 +251,10 @@ export default {
         return 0;
       });
 
-      this.updateSettings();
+      this.updateSettings(); // сохраняем сортировку
     },
 
-    highlight(text, col) {
+    highlight(text, col) { // подсвечиваем отфильтрованные данные
       if (this.filter !== "") { // global filter
         var s_i = (text+'').toLowerCase().indexOf(this.filter.toLowerCase());
         var e_i = s_i + this.filter.length;
@@ -276,7 +276,7 @@ export default {
       return text;
     },
 
-    getRows(col) {
+    getRows(col) { // получаем данные для столбца
       var rows = [];
       var from_idx = (this.page - 1) * this.onpage_prop;
       var to_idx = from_idx + this.onpage_prop;
@@ -287,7 +287,7 @@ export default {
       return rows;
     },
 
-    load() {
+    load() { // загружаем данные в компонент
       if ( (this.table !== []) && (this.table !== {}) ) { // check is table not empty
         var cols = [];
 
@@ -342,7 +342,10 @@ export default {
           });
         }
 
-        // key for saving setting
+        /**
+         * Ключ для сохранения настроек. Формируется на основе отсортированных названий столбцов.
+         * Если набор столбцов в данных совпадает, то настройки загрузятся
+         */
         cols.sort();
         this.key = JSON.stringify(cols);
 
@@ -356,7 +359,7 @@ export default {
       }
     },
 
-    updateSettings() {
+    updateSettings() { // обновляем настройки
       setTimeout(function(that) {
         var data = JSON.stringify(that.cols);
         window.localStorage.setItem(that.key, data);
@@ -364,13 +367,13 @@ export default {
     }
   },
   mounted: function() {
-    window.addEventListener("keydown", (e) => {
+    window.addEventListener("keydown", (e) => { // esc закрывает попап
       if (e.keyCode == 27) {
         this.popup = false;
       }
     });
-    window.addEventListener('mouseup', this.stopDrag);
-    this.load();
+    window.addEventListener('mouseup', this.stopDrag); // драг окончен
+    this.load(); // загружаем данные
   }
 }
 </script>
