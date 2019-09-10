@@ -1,5 +1,5 @@
 <template lang="pug">
-  .table-sorter
+  .table-sorter(@mousemove="doDrag")
     .pagination
       span Страница {{page}} из {{Math.ceil(rows_filtered.length / onpage_prop)}} (Всего {{rows_filtered.length}} элементов)
       .btn(:class="{ disabled: (page == 1) }", @click="page = 1") &#9668;&#9668;
@@ -18,8 +18,8 @@
     .table
       .cols
         template(v-for="(col, idx) in cols")
-          .col(v-if="col.visible")
-            .title {{col.title}}
+          .col(v-if="col.visible", :class="{dragging: col.dragging}", :ref="col.title")
+            .title(@mousedown="startDrag($event, cols[idx])") {{col.title}}
             .filter
               input(type="text", v-model="cols[idx].filter")
               .btn.clear(v-if="cols[idx].filter !== ''", @click="cols[idx].filter = ''")
@@ -50,6 +50,9 @@
                 .title {{col.title}}
 </template>
 <script>
+String.prototype.splice = function(idx, rem, str) {
+  return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem));
+};
 export default {
   name: 'table-sorter',
   props: {
@@ -77,7 +80,10 @@ export default {
       page: 1,
       onpage_prop: this.onpage,
 
-      popup: false
+      popup: false,
+      dragging: false,
+      col: '',
+      xpos: 0
     }
   },
 
@@ -127,12 +133,75 @@ export default {
   },
 
   methods: {
+    startDrag(e, col) {
+      e.preventDefault();
+      col.dragging = true;
+      this.dragging = true;
+      this.xpos = e.clientX;
+      this.col = col.title;
+    },
+
+    doDrag(e) {
+      if (this.dragging) {
+        e.preventDefault();
+        var xpos = e.clientX;
+        var gap = this.$refs[this.col][0].getBoundingClientRect().width / 2;
+        if (xpos < this.xpos) { // moving left
+          var diff = this.xpos - xpos;
+          if (diff > gap) {
+            this.colSort(-1);
+          }
+        } else { // moving right
+          var diff = xpos - this.xpos;
+          if (diff > gap) {
+            this.colSort(1);
+          }
+        }
+      }
+    },
+
+    stopDrag() {
+      this.cols.forEach( (col) => {
+        col.dragging = false;
+      });
+      this.dragging = false;
+    },
+
+    colSort(direction) {
+      this.dragging = false;
+      setTimeout(function(that) { that.dragging = true; }, 100, this);
+      this.cols.forEach( (col, idx) => {
+        if (col.title === this.col) {
+          if (direction < 0) {
+            if (col.order > 0) {
+              var width = this.$refs[this.cols[idx - 1].title][0].getBoundingClientRect().width;
+              this.cols[idx - 1].order += 1;
+              col.order -= 1;
+              this.xpos -= width;
+            }
+          } else {
+            if (col.order < (this.cols.length - 1)) {
+              var width = this.$refs[this.cols[idx + 1].title][0].getBoundingClientRect().width;
+              this.cols[idx + 1].order -= 1;
+              col.order += 1;
+              this.xpos += width;
+            }
+          }
+        }
+      });
+
+      this.cols.sort( (a, b) => {
+        if ( a.order < b.order ){
+          return -1;
+        }
+        if ( a.order > b.order ){
+          return 1;
+        }
+        return 0;
+      });
+    },
 
     highlight(text, col) {
-      String.prototype.splice = function(idx, rem, str) {
-        return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem));
-      };
-
       if (this.filter !== "") { // global filter
         var s_i = (text+'').toLowerCase().indexOf(this.filter.toLowerCase());
         var e_i = s_i + this.filter.length;
@@ -173,6 +242,11 @@ export default {
               title: el,
               order: this.cols.length,
               visible: true,
+              dragging: false,
+              pos: {
+                left: 0,
+                top: 0
+              },
               filter: ''
             };
             this.cols.push(col);
@@ -189,11 +263,12 @@ export default {
     }
   },
   mounted: function() {
-    document.addEventListener("keydown", (e) => {
+    window.addEventListener("keydown", (e) => {
         if (e.keyCode == 27) {
             this.popup = false;
         }
     });
+    window.addEventListener('mouseup', this.stopDrag);
     this.load();
   }
 }
@@ -397,8 +472,13 @@ export default {
         border-left: 1px solid $gray;
         border-top: 1px solid $gray;
         border-bottom: 1px solid $gray;
+        transition: all 300ms ease;
 
         &:nth-last-child(1) { border-right: 1px solid $gray; }
+
+        &.dragging {
+          transform: translateY(-5px);
+        }
 
         .title {
           font-weight: bold;
@@ -406,6 +486,7 @@ export default {
           width: 100%;
           border-bottom: 1px solid $gray;
           padding: 3px;
+          cursor: ew-resize;
         }
 
         .filter {
