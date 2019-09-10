@@ -1,11 +1,11 @@
 <template lang="pug">
-  .table-sorter(@keydown.esc="popup = false")
+  .table-sorter
     .pagination
       span Страница {{page}} из {{Math.ceil(rows_filtered.length / onpage_prop)}} (Всего {{rows_filtered.length}} элементов)
-      .btn(:class="{ disabled: (page == 1) }", @click="page = 1") &#9668;&#9668;	
+      .btn(:class="{ disabled: (page == 1) }", @click="page = 1") &#9668;&#9668;
       .btn(:class="{ disabled: (page == 1) }", @click="page -= 1") &#9668;
       .btn(:class="{ disabled: (page == Math.ceil(rows_filtered.length / onpage_prop)) }", @click="page += 1") &#9658;
-      .btn(:class="{ disabled: (page == Math.ceil(rows_filtered.length / onpage_prop)) }", @click="page = Math.ceil(rows_filtered.length / onpage_prop)") &#9658;&#9658;	
+      .btn(:class="{ disabled: (page == Math.ceil(rows_filtered.length / onpage_prop)) }", @click="page = Math.ceil(rows_filtered.length / onpage_prop)") &#9658;&#9658;
       .onpage-select
         | Записей на странице:&nbsp;
         select(v-model="onpage_prop")
@@ -28,10 +28,10 @@
                 .row(v-html="highlight(row, col)")
     .pagination
       span Страница {{page}} из {{Math.ceil(rows_filtered.length / onpage_prop)}} (Всего {{rows_filtered.length}} элементов)
-      .btn(:class="{ disabled: (page == 1) }", @click="page = 1") &#9668;&#9668;	
+      .btn(:class="{ disabled: (page == 1) }", @click="page = 1") &#9668;&#9668;
       .btn(:class="{ disabled: (page == 1) }", @click="page -= 1") &#9668;
       .btn(:class="{ disabled: (page == Math.ceil(rows_filtered.length / onpage_prop)) }", @click="page += 1") &#9658;
-      .btn(:class="{ disabled: (page == Math.ceil(rows_filtered.length / onpage_prop)) }", @click="page = Math.ceil(rows_filtered.length / onpage_prop)") &#9658;&#9658;	
+      .btn(:class="{ disabled: (page == Math.ceil(rows_filtered.length / onpage_prop)) }", @click="page = Math.ceil(rows_filtered.length / onpage_prop)") &#9658;&#9658;
       .onpage-select
         | Записей на странице:&nbsp;
         select(v-model="onpage_prop")
@@ -189,6 +189,11 @@ export default {
     }
   },
   mounted: function() {
+    document.addEventListener("keydown", (e) => {
+        if (e.keyCode == 27) {
+            this.popup = false;
+        }
+    });
     this.load();
   }
 }
