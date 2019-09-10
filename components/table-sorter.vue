@@ -6,6 +6,11 @@
       .btn(:class="{ disabled: (page == 1) }", @click="page -= 1") &#9668;
       .btn(:class="{ disabled: (page == Math.ceil(rows_filtered.length / onpage_prop)) }", @click="page += 1") &#9658;
       .btn(:class="{ disabled: (page == Math.ceil(rows_filtered.length / onpage_prop)) }", @click="page = Math.ceil(rows_filtered.length / onpage_prop)") &#9658;&#9658;	
+      .onpage-select
+        | Записей на странице:&nbsp;
+        select(v-model="onpage_prop")
+          template(v-for="p in onpageSelect")
+            option(:value="p") {{p}}
     .filter
       input(v-model="filter", placeholder="Введите текст для поиска")
       .btn.clear(v-if="filter !== ''", @click="filter = ''")
@@ -20,9 +25,21 @@
             .rows
               template(v-for="(row, ridx) in getRows(col)")
                 .row(v-html="highlight(row, col)")
+    .pagination
+      span Страница {{page}} из {{Math.ceil(rows_filtered.length / onpage_prop)}} (Всего {{rows_filtered.length}} элементов)
+      .btn(:class="{ disabled: (page == 1) }", @click="page = 1") &#9668;&#9668;	
+      .btn(:class="{ disabled: (page == 1) }", @click="page -= 1") &#9668;
+      .btn(:class="{ disabled: (page == Math.ceil(rows_filtered.length / onpage_prop)) }", @click="page += 1") &#9658;
+      .btn(:class="{ disabled: (page == Math.ceil(rows_filtered.length / onpage_prop)) }", @click="page = Math.ceil(rows_filtered.length / onpage_prop)") &#9658;&#9658;	
+      .onpage-select
+        | Записей на странице:&nbsp;
+        select(v-model="onpage_prop")
+          template(v-for="p in onpageSelect")
+            option(:value="p") {{p}}
 </template>
 <script>
 export default {
+  name: 'table-sorter',
   props: {
     table: {
       type: [Object, Array],
@@ -31,6 +48,10 @@ export default {
     onpage: {
       type: Number,
       default: 10
+    },
+    onpageSelect: {
+      type: Array,
+      default: [10, 20, 50, 100]
     }
   },
 
@@ -202,6 +223,10 @@ export default {
     align-items: center;
     margin-bottom: 10px;
 
+    .onpage-select {
+      margin-left: auto;
+    }
+
     .btn {
       margin-left: 10px;
       font-family: initial;
@@ -246,6 +271,7 @@ export default {
   }
 
   .table {
+    margin-bottom: 10px;
 
     .cols {
       width: 100%;
