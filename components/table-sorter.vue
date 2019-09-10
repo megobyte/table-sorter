@@ -21,7 +21,7 @@
           .col(v-if="col.visible", :class="{dragging: col.dragging}", :ref="col.title")
             .title(@mousedown="startDrag($event, cols[idx])") {{col.title}}
             .filter
-              input(type="text", v-model="cols[idx].filter")
+              input(type="text", v-model="cols[idx].filter", @change="page = 1", @keyup="page = 1")
               .btn.clear(v-if="cols[idx].filter !== ''", @click="cols[idx].filter = ''")
             .rows
               template(v-for="(row, ridx) in getRows(col)")
@@ -158,6 +158,9 @@ export default {
   watch: {
     table: function() { // если данные обновились вне компонента, перезагружаем
       this.load();
+    },
+    filter: function() { // сбрасываем страницу при изменении фильтра
+      this.page = 1;
     }
   },
 
