@@ -45,7 +45,7 @@
           | Видимость столбцов:
           .items
             template(v-for="(col, idx) in cols")
-              label.item
+              label.item(@click="updateSettings()")
                 input(type="checkbox", v-model="cols[idx].visible")
                 .title {{col.title}}
 </template>
@@ -53,6 +53,34 @@
 String.prototype.splice = function(idx, rem, str) {
   return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem));
 };
+
+if (!window.localStorage) {
+  window.localStorage = {
+    getItem: function (sKey) {
+      if (!sKey || !this.hasOwnProperty(sKey)) { return null; }
+      return unescape(document.cookie.replace(new RegExp("(?:^|.*;\\s*)" + escape(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=\\s*((?:[^;](?!;))*[^;]?).*"), "$1"));
+    },
+    key: function (nKeyId) {
+      return unescape(document.cookie.replace(/\s*\=(?:.(?!;))*$/, "").split(/\s*\=(?:[^;](?!;))*[^;]?;\s*/)[nKeyId]);
+    },
+    setItem: function (sKey, sValue) {
+      if(!sKey) { return; }
+      document.cookie = escape(sKey) + "=" + escape(sValue) + "; expires=Tue, 19 Jan 2038 03:14:07 GMT; path=/";
+      this.length = document.cookie.match(/\=/g).length;
+    },
+    length: 0,
+    removeItem: function (sKey) {
+      if (!sKey || !this.hasOwnProperty(sKey)) { return; }
+      document.cookie = escape(sKey) + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+      this.length--;
+    },
+    hasOwnProperty: function (sKey) {
+      return (new RegExp("(?:^|;\\s*)" + escape(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=")).test(document.cookie);
+    }
+  };
+  window.localStorage.length = (document.cookie.match(/\=/g) || window.localStorage).length;
+}
+
 export default {
   name: 'table-sorter',
   props: {
@@ -79,6 +107,7 @@ export default {
       filter: '',
       page: 1,
       onpage_prop: this.onpage,
+      key: '',
 
       popup: false,
       dragging: false,
@@ -170,19 +199,41 @@ export default {
     colSort(direction) {
       this.dragging = false;
       setTimeout(function(that) { that.dragging = true; }, 100, this);
+
+      var visible = 0;
+      this.cols.forEach( (col) => { if (col.visible) visible+=1; });
+
       this.cols.forEach( (col, idx) => {
         if (col.title === this.col) {
           if (direction < 0) {
             if (col.order > 0) {
-              var width = this.$refs[this.cols[idx - 1].title][0].getBoundingClientRect().width;
-              this.cols[idx - 1].order += 1;
-              col.order -= 1;
+              var neibor = 1;
+              while(this.cols[idx - neibor].visible === false) { neibor -= 1;}
+              var width = this.$refs[this.cols[idx - neibor].title][0].getBoundingClientRect().width;
+
+              this.cols[idx - neibor].order += 1;
+              if (neibor > 1) {
+                for (var c = neibor-1; c >= 1; c-- ) {
+                  this.cols[idx - c].order += 1;
+                }
+              }
+
+              col.order -= neibor;
               this.xpos -= width;
             }
           } else {
-            if (col.order < (this.cols.length - 1)) {
-              var width = this.$refs[this.cols[idx + 1].title][0].getBoundingClientRect().width;
-              this.cols[idx + 1].order -= 1;
+            if (col.order < (visible - 1)) {
+              var neibor = 1;
+              while(this.cols[idx + neibor].visible === false) { neibor += 1;}
+              var width = this.$refs[this.cols[idx + neibor].title][0].getBoundingClientRect().width;
+
+              this.cols[idx + neibor].order -= 1;
+              if (neibor > 1) {
+                for (var c = neibor-1; c >= 1; c-- ) {
+                  this.cols[idx + c].order -= 1;
+                }
+              }
+
               col.order += 1;
               this.xpos += width;
             }
@@ -199,6 +250,8 @@ export default {
         }
         return 0;
       });
+
+      this.updateSettings();
     },
 
     highlight(text, col) {
@@ -236,6 +289,8 @@ export default {
 
     load() {
       if ( (this.table !== []) && (this.table !== {}) ) { // check is table not empty
+        var cols = [];
+
         if (typeof this.table.cols !== "undefined") { // check table is object
           this.table.cols.forEach((el) => {
             var col = {
@@ -250,6 +305,7 @@ export default {
               filter: ''
             };
             this.cols.push(col);
+            cols.push((el+'').toLowerCase());
           });
           this.table.data.forEach( (row) => {
             var r = {};
@@ -258,15 +314,60 @@ export default {
             });
             this.rows.push(r);
           });
+        } else if (typeof this.table[0] !== "undefined") { // check table is array
+          var row = this.table[0];
+          var _cols = [];
+          for (var k in row) { _cols.push(k); }
+          _cols.forEach((el) => {
+            var col = {
+              title: el,
+              order: this.cols.length,
+              visible: true,
+              dragging: false,
+              pos: {
+                left: 0,
+                top: 0
+              },
+              filter: ''
+            };
+            this.cols.push(col);
+            cols.push((el+'').toLowerCase());
+          });
+          this.table.forEach( (row) => {
+            var r = {};
+            this.cols.forEach( (col) => {
+              r[col.title] = row[col.title];
+            });
+            this.rows.push(r);
+          });
+        }
+
+        // key for saving setting
+        cols.sort();
+        this.key = JSON.stringify(cols);
+
+        var last_cols = window.localStorage.getItem(this.key);
+        if (last_cols !== null) {
+          this.cols = JSON.parse(last_cols);
+          this.cols.forEach( (col) => {
+            col.dragging = false;
+          });
         }
       }
+    },
+
+    updateSettings() {
+      setTimeout(function(that) {
+        var data = JSON.stringify(that.cols);
+        window.localStorage.setItem(that.key, data);
+      }, 100, this);
     }
   },
   mounted: function() {
     window.addEventListener("keydown", (e) => {
-        if (e.keyCode == 27) {
-            this.popup = false;
-        }
+      if (e.keyCode == 27) {
+        this.popup = false;
+      }
     });
     window.addEventListener('mouseup', this.stopDrag);
     this.load();
