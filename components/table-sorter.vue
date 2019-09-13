@@ -50,52 +50,91 @@
                 .title {{col.title}}
 </template>
 <script>
-String.prototype.splice = function(idx, rem, str) { // резалка текста, чтобы добавлять теги, если есть фильтр
-  return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem));
-};
+// eslint-disable-next-line
+String.prototype.splice = function(idx, rem, str) {
+  // резалка текста, чтобы добавлять теги, если есть фильтр
+  return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem))
+}
 
-if (!window.localStorage) { // если нет localStorage, эмулируем с помощью куков (https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Local_storage)
+if (!window.localStorage) {
+  // если нет localStorage, эмулируем с помощью куков (https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Local_storage)
   window.localStorage = {
-    getItem: function (sKey) {
-      if (!sKey || !this.hasOwnProperty(sKey)) { return null; }
-      return unescape(document.cookie.replace(new RegExp("(?:^|.*;\\s*)" + escape(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=\\s*((?:[^;](?!;))*[^;]?).*"), "$1"));
+    getItem(sKey) {
+      if (!sKey || !this.hasOwnProperty(sKey)) {
+        return null
+      }
+      return unescape(
+        document.cookie.replace(
+          new RegExp(
+            '(?:^|.*;\\s*)' +
+              // eslint-disable-next-line
+              escape(sKey).replace(/[\-\.\+\*]/g, '\\$&') +
+              '\\s*\\=\\s*((?:[^;](?!;))*[^;]?).*'
+          ),
+          '$1'
+        )
+      )
     },
-    key: function (nKeyId) {
-      return unescape(document.cookie.replace(/\s*\=(?:.(?!;))*$/, "").split(/\s*\=(?:[^;](?!;))*[^;]?;\s*/)[nKeyId]);
+    key(nKeyId) {
+      return unescape(
+        document.cookie
+          // eslint-disable-next-line
+          .replace(/\s*\=(?:.(?!;))*$/, '')
+          // eslint-disable-next-line
+          .split(/\s*\=(?:[^;](?!;))*[^;]?;\s*/)[nKeyId]
+      )
     },
-    setItem: function (sKey, sValue) {
-      if(!sKey) { return; }
-      document.cookie = escape(sKey) + "=" + escape(sValue) + "; expires=Tue, 19 Jan 2038 03:14:07 GMT; path=/";
-      this.length = document.cookie.match(/\=/g).length;
+    setItem(sKey, sValue) {
+      if (!sKey) {
+        return
+      }
+      document.cookie =
+        escape(sKey) +
+        '=' +
+        escape(sValue) +
+        '; expires=Tue, 19 Jan 2038 03:14:07 GMT; path=/'
+      // eslint-disable-next-line
+      this.length = document.cookie.match(/\=/g).length
     },
     length: 0,
-    removeItem: function (sKey) {
-      if (!sKey || !this.hasOwnProperty(sKey)) { return; }
-      document.cookie = escape(sKey) + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-      this.length--;
+    removeItem(sKey) {
+      if (!sKey || !this.hasOwnProperty(sKey)) {
+        return
+      }
+      document.cookie =
+        escape(sKey) + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+      this.length--
     },
-    hasOwnProperty: function (sKey) {
-      return (new RegExp("(?:^|;\\s*)" + escape(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=")).test(document.cookie);
+    hasOwnProperty(sKey) {
+      return new RegExp(
+        // eslint-disable-next-line
+        '(?:^|;\\s*)' + escape(sKey).replace(/[\-\.\+\*]/g, '\\$&') + '\\s*\\='
+      ).test(document.cookie)
     }
-  };
-  window.localStorage.length = (document.cookie.match(/\=/g) || window.localStorage).length;
+  }
+  window.localStorage.length = (
+    document.cookie.match(/\=/g) || window.localStorage // eslint-disable-line
+  ).length
 }
 
 export default {
-  name: 'table-sorter',
+  name: 'TableSorter',
   props: {
-    table: { // таблица с данными. Либо объект с содержимым cols: Array of strings и data: Array of strings, либо массив с объектами col: value
+    table: {
+      // таблица с данными. Либо объект с содержимым cols: Array of strings и data: Array of strings, либо массив с объектами col: value
       type: [Object, Array],
       required: true
     },
-    onpage: { // сколько записей показывать на странице
+    onpage: {
+      // сколько записей показывать на странице
       type: Number,
       default: 10
     },
-    onpageSelect: { // массив значений выпадающего меню выбора количества записей на странице
+    onpageSelect: {
+      // массив значений выпадающего меню выбора количества записей на странице
       type: Array,
-      default: function() {
-        return [10, 20, 50, 100];
+      default() {
+        return [10, 20, 50, 100]
       }
     }
   },
@@ -117,186 +156,243 @@ export default {
   },
 
   computed: {
-    rows_filtered: function() { // отдает отфильтрованные данные, чтобы можно было посчитать кол-во элементов и страниц
-      var rows = [];
+    rows_filtered() {
+      // отдает отфильтрованные данные, чтобы можно было посчитать кол-во элементов и страниц
+      let rows = []
 
       // global filter
-      if (this.filter !== "") {
-        this.rows.forEach( (row) => {
-          this.cols.every( (col) => {
-            if (!col.visible) return false;
-            if ((row[col.title]+"").toLowerCase().indexOf(this.filter.toLowerCase()) > -1) {
-              rows.push(row);
-              return false;
+      if (this.filter !== '') {
+        this.rows.forEach((row) => {
+          this.cols.every((col) => {
+            if (!col.visible) return false
+            if (
+              (row[col.title] + '')
+                .toLowerCase()
+                .includes(this.filter.toLowerCase())
+            ) {
+              rows.push(row)
+              return false
             } else {
-              return true;
+              return true
             }
-          });
-        });
+          })
+        })
       } else {
-        rows = this.rows;
+        rows = this.rows
       }
 
       // column filter
-      this.cols.forEach( (col) => {
+      this.cols.forEach((col) => {
         if (col.filter !== '') {
-          var _rows = [];
-          rows.forEach( (row) => {
-            if ((row[col.title]+"").toLowerCase().indexOf(col.filter.toLowerCase()) > -1) {
-              _rows.push(row);
+          const _rows = []
+          rows.forEach((row) => {
+            if (
+              (row[col.title] + '')
+                .toLowerCase()
+                .includes(col.filter.toLowerCase())
+            ) {
+              _rows.push(row)
             }
-          });
+          })
 
-          rows = _rows;
+          rows = _rows
         }
-      });
+      })
 
-      return rows;
+      return rows
     }
   },
 
   watch: {
-    table: function() { // если данные обновились вне компонента, перезагружаем
-      this.load();
+    table() {
+      // если данные обновились вне компонента, перезагружаем
+      this.load()
     },
-    filter: function() { // сбрасываем страницу при изменении фильтра
-      this.page = 1;
+    filter() {
+      // сбрасываем страницу при изменении фильтра
+      this.page = 1
     }
   },
-
+  mounted() {
+    window.addEventListener('keydown', (e) => {
+      // esc закрывает попап
+      if (e.keyCode === 27) {
+        this.popup = false
+      }
+    })
+    window.addEventListener('mouseup', this.stopDrag) // драг окончен
+    this.load() // загружаем данные
+  },
   methods: {
-    startDrag(e, col) { // начало сортировки столбцов
-      e.preventDefault(); // чтобы не выделялся текст при драге
-      col.dragging = true;
-      this.dragging = true;
-      this.xpos = e.clientX;
-      this.col = col.title;
+    startDrag(e, col) {
+      // начало сортировки столбцов
+      e.preventDefault() // чтобы не выделялся текст при драге
+      col.dragging = true
+      this.dragging = true
+      this.xpos = e.clientX
+      this.col = col.title
     },
 
-    doDrag(e) { // сортировка столбцов
-      if (this.dragging) { // если сейчас тащится какой-то столбец, то работаем
-        e.preventDefault(); // чтобы не выделялся текст при драге
-        var xpos = e.clientX;
-        var gap = this.$refs[this.col][0].getBoundingClientRect().width / 2;
-        if (xpos < this.xpos) { // мышка двигается влево
-          var diff = this.xpos - xpos;
-          if (diff > gap) { // если мышка сдвинулась более чем на половину ширины столбца, переносим его влево
-            this.colSort(-1);
+    doDrag(e) {
+      // сортировка столбцов
+      if (this.dragging) {
+        // если сейчас тащится какой-то столбец, то работаем
+        e.preventDefault() // чтобы не выделялся текст при драге
+        const xpos = e.clientX
+        const gap = this.$refs[this.col][0].getBoundingClientRect().width / 2
+        if (xpos < this.xpos) {
+          // мышка двигается влево
+          const diff = this.xpos - xpos
+          if (diff > gap) {
+            // если мышка сдвинулась более чем на половину ширины столбца, переносим его влево
+            this.colSort(-1)
           }
-        } else { // мышка двигается вправо
-          var diff = xpos - this.xpos;
-          if (diff > gap) { // если мышка сдвинулась более чем на половину ширины столбца, переносим его вправо
-            this.colSort(1);
+        } else {
+          // мышка двигается вправо
+          const diff = xpos - this.xpos
+          if (diff > gap) {
+            // если мышка сдвинулась более чем на половину ширины столбца, переносим его вправо
+            this.colSort(1)
           }
         }
       }
     },
 
-    stopDrag() { // кнопка мыши отпущена
-      this.cols.forEach( (col) => {
-        col.dragging = false;
-      });
-      this.dragging = false;
+    stopDrag() {
+      // кнопка мыши отпущена
+      this.cols.forEach((col) => {
+        col.dragging = false
+      })
+      this.dragging = false
     },
 
-    colSort(direction) { // сортируем столбцы
-      this.dragging = false;
-      setTimeout(function(that) { that.dragging = true; }, 100, this);  // чтобы столбец успел переехать на свое место
+    colSort(direction) {
+      // сортируем столбцы
+      this.dragging = false
+      setTimeout(
+        function(that) {
+          that.dragging = true
+        },
+        100,
+        this
+      ) // чтобы столбец успел переехать на свое место
 
-      var visible = 0;
-      this.cols.forEach( (col) => { if (col.visible) visible+=1; });  // считаем, сколько видимых столбцов
+      let visible = 0
+      this.cols.forEach((col) => {
+        if (col.visible) visible += 1
+      }) // считаем, сколько видимых столбцов
 
-      this.cols.forEach( (col, idx) => {
+      this.cols.forEach((col, idx) => {
         if (col.title === this.col) {
-          if (direction < 0) { // вдигаем стобец влево
+          if (direction < 0) {
+            // вдигаем стобец влево
             if (col.order > 0) {
-              var neibor = 1;
-              while(this.cols[idx - neibor].visible === false) { neibor -= 1;}
-              var width = this.$refs[this.cols[idx - neibor].title][0].getBoundingClientRect().width;
+              let neibor = 1
+              while (this.cols[idx - neibor].visible === false) {
+                neibor -= 1
+              }
+              const title = this.cols[idx - neibor].title
+              const width = this.$refs[title][0].getBoundingClientRect().width
 
-              this.cols[idx - neibor].order += 1;
+              this.cols[idx - neibor].order += 1
               if (neibor > 1) {
-                for (var c = neibor-1; c >= 1; c-- ) {
-                  this.cols[idx - c].order += 1;
+                for (let c = neibor - 1; c >= 1; c--) {
+                  this.cols[idx - c].order += 1
                 }
               }
 
-              col.order -= neibor;
-              this.xpos -= width;
+              col.order -= neibor
+              this.xpos -= width
             }
-          } else { // двигаем столбец вправо
-            if (col.order < (visible - 1)) {
-              var neibor = 1;
-              while(this.cols[idx + neibor].visible === false) { neibor += 1;}
-              var width = this.$refs[this.cols[idx + neibor].title][0].getBoundingClientRect().width;
+          } else {
+            // двигаем столбец вправо
+            let neibor = 1
+            if (col.order < visible - 1) {
+              while (this.cols[idx + neibor].visible === false) {
+                neibor += 1
+              }
+              const title = this.cols[idx + neibor].title
+              const width = this.$refs[title][0].getBoundingClientRect().width
 
-              this.cols[idx + neibor].order -= 1;
+              this.cols[idx + neibor].order -= 1
               if (neibor > 1) {
-                for (var c = neibor-1; c >= 1; c-- ) {
-                  this.cols[idx + c].order -= 1;
+                for (let c = neibor - 1; c >= 1; c--) {
+                  this.cols[idx + c].order -= 1
                 }
               }
 
-              col.order += 1;
-              this.xpos += width;
+              col.order += 1
+              this.xpos += width
             }
           }
         }
-      });
+      })
 
-      this.cols.sort( (a, b) => { // сортируем столбцы по новым значениям
-        if ( a.order < b.order ){
-          return -1;
+      this.cols.sort((a, b) => {
+        // сортируем столбцы по новым значениям
+        if (a.order < b.order) {
+          return -1
         }
-        if ( a.order > b.order ){
-          return 1;
+        if (a.order > b.order) {
+          return 1
         }
-        return 0;
-      });
+        return 0
+      })
 
-      this.updateSettings(); // сохраняем сортировку
+      this.updateSettings() // сохраняем сортировку
     },
 
-    highlight(text, col) { // подсвечиваем отфильтрованные данные
-      if (this.filter !== "") { // global filter
-        var s_i = (text+'').toLowerCase().indexOf(this.filter.toLowerCase());
-        var e_i = s_i + this.filter.length;
-        if (s_i > -1) {
-          text = (text+'').splice(e_i, 0, '</span>');
-          text = (text+'').splice(s_i, 0, '<span class="globalhl">');
+    highlight(text, col) {
+      // подсвечиваем отфильтрованные данные
+      if (this.filter !== '') {
+        // global filter
+        const startIndex = (text + '')
+          .toLowerCase()
+          .indexOf(this.filter.toLowerCase())
+        const endIndex = startIndex + this.filter.length
+        if (startIndex > -1) {
+          text = (text + '').splice(endIndex, 0, '</span>')
+          text = (text + '').splice(startIndex, 0, '<span class="globalhl">')
         }
       }
 
-      if (col.filter !== "") { // column filter
-        var s_i = (text+'').toLowerCase().indexOf(col.filter.toLowerCase());
-        var e_i = s_i + col.filter.length;
-        if (s_i > -1) {
-          text = (text+'').splice(e_i, 0, '</span>');
-          text = (text+'').splice(s_i, 0, '<span class="localhl">');
+      if (col.filter !== '') {
+        // column filter
+        const startIndex = (text + '')
+          .toLowerCase()
+          .indexOf(col.filter.toLowerCase())
+        const endIndex = startIndex + col.filter.length
+        if (startIndex > -1) {
+          text = (text + '').splice(endIndex, 0, '</span>')
+          text = (text + '').splice(startIndex, 0, '<span class="localhl">')
         }
       }
 
-      return text;
+      return text
     },
 
-    getRows(col) { // получаем данные для столбца
-      var rows = [];
-      var from_idx = (this.page - 1) * this.onpage_prop;
-      var to_idx = from_idx + this.onpage_prop;
-      if (to_idx > this.rows_filtered.length) to_idx = this.rows_filtered.length;
-      for (var i = from_idx; i < to_idx; i++) {
-        rows.push(this.rows_filtered[i][col.title]);
+    getRows(col) {
+      // получаем данные для столбца
+      const rows = []
+      const fromIdx = (this.page - 1) * this.onpage_prop
+      let toIdx = fromIdx + this.onpage_prop
+      if (toIdx > this.rows_filtered.length) toIdx = this.rows_filtered.length
+      for (let i = fromIdx; i < toIdx; i++) {
+        rows.push(this.rows_filtered[i][col.title])
       }
-      return rows;
+      return rows
     },
 
-    load() { // загружаем данные в компонент
-      if ( (this.table !== []) && (this.table !== {}) ) { // check is table not empty
-        var cols = [];
+    load() {
+      // загружаем данные в компонент
+      if (this.table !== [] && this.table !== {}) {
+        // check is table not empty
+        const cols = []
 
-        if (typeof this.table.cols !== "undefined") { // check table is object
+        if (typeof this.table.cols !== 'undefined') {
+          // check table is object
           this.table.cols.forEach((el) => {
-            var col = {
+            const col = {
               title: el,
               order: this.cols.length,
               visible: true,
@@ -306,23 +402,26 @@ export default {
                 top: 0
               },
               filter: ''
-            };
-            this.cols.push(col);
-            cols.push((el+'').toLowerCase());
-          });
-          this.table.data.forEach( (row) => {
-            var r = {};
-            this.cols.forEach( (col) => {
-              r[col.title] = row[col.order];
-            });
-            this.rows.push(r);
-          });
-        } else if (typeof this.table[0] !== "undefined") { // check table is array
-          var row = this.table[0];
-          var _cols = [];
-          for (var k in row) { _cols.push(k); }
+            }
+            this.cols.push(col)
+            cols.push((el + '').toLowerCase())
+          })
+          this.table.data.forEach((row) => {
+            const r = {}
+            this.cols.forEach((col) => {
+              r[col.title] = row[col.order]
+            })
+            this.rows.push(r)
+          })
+        } else if (typeof this.table[0] !== 'undefined') {
+          // check table is array
+          const row = this.table[0]
+          const _cols = []
+          for (const k in row) {
+            _cols.push(k)
+          }
           _cols.forEach((el) => {
-            var col = {
+            const col = {
               title: el,
               order: this.cols.length,
               visible: true,
@@ -332,51 +431,47 @@ export default {
                 top: 0
               },
               filter: ''
-            };
-            this.cols.push(col);
-            cols.push((el+'').toLowerCase());
-          });
-          this.table.forEach( (row) => {
-            var r = {};
-            this.cols.forEach( (col) => {
-              r[col.title] = row[col.title];
-            });
-            this.rows.push(r);
-          });
+            }
+            this.cols.push(col)
+            cols.push((el + '').toLowerCase())
+          })
+          this.table.forEach((row) => {
+            const r = {}
+            this.cols.forEach((col) => {
+              r[col.title] = row[col.title]
+            })
+            this.rows.push(r)
+          })
         }
 
         /**
          * Ключ для сохранения настроек. Формируется на основе отсортированных названий столбцов.
          * Если набор столбцов в данных совпадает, то настройки загрузятся
          */
-        cols.sort();
-        this.key = JSON.stringify(cols);
+        cols.sort()
+        this.key = JSON.stringify(cols)
 
-        var last_cols = window.localStorage.getItem(this.key);
-        if (last_cols !== null) {
-          this.cols = JSON.parse(last_cols);
-          this.cols.forEach( (col) => {
-            col.dragging = false;
-          });
+        const lastCols = window.localStorage.getItem(this.key)
+        if (lastCols !== null) {
+          this.cols = JSON.parse(lastCols)
+          this.cols.forEach((col) => {
+            col.dragging = false
+          })
         }
       }
     },
 
-    updateSettings() { // обновляем настройки
-      setTimeout(function(that) {
-        var data = JSON.stringify(that.cols);
-        window.localStorage.setItem(that.key, data);
-      }, 100, this);
+    updateSettings() {
+      // обновляем настройки
+      setTimeout(
+        function(that) {
+          const data = JSON.stringify(that.cols)
+          window.localStorage.setItem(that.key, data)
+        },
+        100,
+        this
+      )
     }
-  },
-  mounted: function() {
-    window.addEventListener("keydown", (e) => { // esc закрывает попап
-      if (e.keyCode == 27) {
-        this.popup = false;
-      }
-    });
-    window.addEventListener('mouseup', this.stopDrag); // драг окончен
-    this.load(); // загружаем данные
   }
 }
 </script>
@@ -424,7 +519,7 @@ export default {
     }
   }
 
-  input[type="text"] {
+  input[type='text'] {
     height: 25px;
     border-radius: 12.5px;
     -webkit-appearance: none;
@@ -463,7 +558,7 @@ export default {
       width: 100%;
       height: 100%;
       background: #000;
-      opacity: .7;
+      opacity: 0.7;
       cursor: pointer;
     }
 
@@ -474,7 +569,7 @@ export default {
       transform: translateX(-50%);
       border: 1px solid $gray;
       background: #fff;
-      box-shadow: 0 3px 5px rgba(#000, .3);
+      box-shadow: 0 3px 5px rgba(#000, 0.3);
       padding: 20px 10px;
       transition: all 300ms ease;
 
@@ -522,7 +617,7 @@ export default {
       margin-left: 10px;
       font-family: initial;
       width: 30px;
-      height:30px;
+      height: 30px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -533,7 +628,7 @@ export default {
 
       &.disabled,
       &:disabled {
-        opacity: .2;
+        opacity: 0.2;
         pointer-events: none;
       }
     }
@@ -581,7 +676,9 @@ export default {
         border-bottom: 1px solid $gray;
         transition: all 300ms ease;
 
-        &:nth-last-child(1) { border-right: 1px solid $gray; }
+        &:nth-last-child(1) {
+          border-right: 1px solid $gray;
+        }
 
         &.dragging {
           transform: translateY(-5px);

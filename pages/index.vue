@@ -4,20 +4,20 @@
 </template>
 
 <script>
-import tableSorter from '~/components/table-sorter.vue'
+import TableSorter from '~/components/table-sorter.vue'
 
 export default {
   components: {
-    tableSorter
+    TableSorter
   },
   data() {
     return {
       table: {}
     }
   },
-  mounted: async function() {
-    var r = await this.$axios.get("/data.json")
-    this.table = r.data;
+  async mounted() {
+    const r = await this.$axios.get('/data.json')
+    this.table = r.data
   }
 }
 </script>
@@ -28,5 +28,4 @@ export default {
   min-height: 100vh;
   display: flex;
 }
-
 </style>
